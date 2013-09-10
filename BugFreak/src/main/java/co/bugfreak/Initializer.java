@@ -2,12 +2,10 @@ package co.bugfreak;
 
 import java.lang.reflect.Type;
 
-import co.bugfreak.components.ErrorReportHandler;
-import co.bugfreak.components.ErrorReportHandlerImpl;
-import co.bugfreak.components.ErrorReportQueue;
-import co.bugfreak.components.ErrorReportQueueImpl;
-import co.bugfreak.components.ErrorReportQueueListener;
-import co.bugfreak.components.ErrorReportQueueListenerImpl;
+import co.bugfreak.components.ErrorHandler;
+import co.bugfreak.components.ErrorHandlerImpl;
+import co.bugfreak.components.ErrorQueueImpl;
+import co.bugfreak.components.ErrorQueue;
 import co.bugfreak.components.ErrorReportSerializer;
 import co.bugfreak.components.ErrorReportStorage;
 import co.bugfreak.components.FormErrorReportSerializer;
@@ -28,19 +26,19 @@ public class Initializer {
   }
 
   private static void setDefaults() {
-    if (!isValidUrl(GlobalConfig.Settings.getServiceEndPoint())) {
-      GlobalConfig.Settings.setServiceEndPoint("https://www.bugfreak.co/v1/api/errors");
+    if (!isValidUrl(GlobalConfig.getServiceEndPoint())) {
+      GlobalConfig.setServiceEndPoint("https://www.bugfreak.co/v1/api/errors");
     }
   }
 
   private static void verifySettings() throws IllegalArgumentException {
-    if (StringUtils.isNullOrEmpty(GlobalConfig.Settings.getToken())) {
+    if (StringUtils.isNullOrEmpty(GlobalConfig.getToken())) {
       throw new IllegalArgumentException("Token not set");
     }
-    if (!isValidUrl(GlobalConfig.Settings.getServiceEndPoint())) {
+    if (!isValidUrl(GlobalConfig.getServiceEndPoint())) {
       throw new IllegalArgumentException("Invalid Service End Point");
     }
-    if (StringUtils.isNullOrEmpty(GlobalConfig.Settings.getApiKey())) {
+    if (StringUtils.isNullOrEmpty(GlobalConfig.getApiKey())) {
       throw new IllegalArgumentException("Api Key not set");
     }
   }
@@ -51,7 +49,7 @@ public class Initializer {
     GlobalConfig.setServiceLocator(serviceLocator);
     GlobalConfig.setErrorReportSerializer(new FormErrorReportSerializer());
 
-    ErrorReportQueue errorReportQueue = new ErrorReportQueueImpl();
+    ErrorQueue errorQueue = new ErrorQueueImpl();
     serviceLocator.addServiceCreator(ErrorReportSerializer.class, new InstanceCreator() {
       @Override
       public Object create(ServiceLocator locator, Type type) {
@@ -70,15 +68,10 @@ public class Initializer {
         return new RemoteErrorReportStorage();
       }
     });
-    serviceLocator.addService(ErrorReportQueue.class, errorReportQueue);
+    serviceLocator.addService(ErrorQueue.class, errorQueue);
 
-    ErrorReportHandler errorHandler = new ErrorReportHandlerImpl();
-    serviceLocator.addService(ErrorReportHandler.class, errorHandler);
-
-    ErrorReportQueueListener errorQueueListener = new ErrorReportQueueListenerImpl();
-    serviceLocator.addService(ErrorReportQueueListener.class, errorQueueListener);
-
-    errorQueueListener.listen(errorReportQueue);
+    ErrorHandler errorHandler = new ErrorHandlerImpl();
+    serviceLocator.addService(ErrorHandler.class, errorHandler);
   }
 
   private static void initReporter() {
